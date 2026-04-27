@@ -1,0 +1,28 @@
+{
+  "name": "suivi-pedagogique",
+  "version": "1.0.0",
+  "description": "Application de suivi pédagogique pour centre de formation",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "seed": "node seed.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["pedagogie", "formation", "suivi"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.0.3",
+    "bcrypt": "^5.0.1",
+    "jsonwebtoken": "^9.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
+
+

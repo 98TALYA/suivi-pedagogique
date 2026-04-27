@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suivi Pédagogique</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & Variables ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+    :root {
+      --ink:       #16213e;
+      --ink2:      #374151;
+      --muted:     #6b7280;
+      --line:      #e5e7eb;
+      --line2:     #d1d5db;
+      --surface:   #f8fafc;
+      --card:      #ffffff;
+      --blue:      #2563eb;
+      --blue-lt:   #eff6ff;
+      --blue-dk:   #1d4ed8;
+      --green:     #059669;
+      --green-lt:  #ecfdf5;
+      --amber:     #d97706;
+      --amber-lt:  #fffbeb;
+      --red:       #dc2626;
+      --red-lt:    #fef2f2;
+      --accent:    #7c3aed;
+      --accent-lt: #f5f3ff;
+      --sidebar-w: 230px;
+      --topbar-h:  54px;
+      --r:         10px;
+      --r-sm:      6px;
+      --shadow:    0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+    }
+ 
+    html { font-size: 14px; -webkit-font-smoothing: antialiased; }
+ 
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--surface);
+      color: var(--ink);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+ 
+    /* ── AUTH WRAPPER (login/register plein écran) ── */
+    .auth-screen {
+      display: none;
+      min-height: 100vh;
+      background: var(--surface);
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .auth-screen.active { display: flex; }
+ 
+    .auth-box {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 390px;
+      box-shadow: var(--shadow-md);
+    }
+ 
+    .auth-brand { text-align: center; margin-bottom: 2rem; }
+    .auth-logo {
+      width: 50px; height: 50px;
+      background: var(--blue);
+      border-radius: 12px;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .auth-logo svg { width: 24px; height: 24px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .auth-brand h1 { font-size: 1.25rem; font-weight: 600; color: var(--ink); letter-spacing: -.02em; }
+    .auth-brand p  { font-size: .85rem; color: var(--muted); margin-top: .25rem; }
+ 
+    /* ── APP LAYOUT (sidebar + main) ── */
+    .app-layout { display: none; }
+    .app-layout.active { display: flex; min-height: 100vh; }
+ 
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--card);
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      z-index: 100;
+    }
+ 
+    .sidebar-logo {
+      padding: 1.25rem 1rem 1rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+    }
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-icon svg { width: 17px; height: 17px; stroke: #fff; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .logo-text { font-size: .85rem; font-weight: 600; color: var(--ink); letter-spacing: -.01em; line-height: 1.25; }
+    .logo-sub  { font-size: .7rem; color: var(--muted); }
+ 
+    .nav { padding: .75rem .75rem; flex: 1; }
+ 
+    .nav-section { font-size: .65rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; padding: .6rem .5rem .3rem; }
+ 
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      padding: .55rem .65rem;
+      border-radius: 8px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: .85rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      transition: background .15s, color .15s;
+      margin-bottom: 1px;
+    }
+    .nav-item svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .nav-item:hover { background: var(--surface); color: var(--ink2); }
+    .nav-item.active { background: var(--blue-lt); color: var(--blue); font-weight: 600; }
+    .nav-item.active svg { stroke: var(--blue); }
+ 
+    .nav-badge {
+      margin-left: auto;
+      background: var(--amber);
+      color: #fff;
+      font-size: .65rem;
+      font-weight: 700;
+      min-width: 18px; height: 18px;
+      border-radius: 99px;
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 0 5px;
+    }
+ 
+    .sidebar-user {
+      border-top: 1px solid var(--line);
+      padding: .85rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .65rem;
+    }
+    .user-av {
+      width: 32px; height: 32px;
+      background: var(--blue-lt);
+      border-radius: 8px;
+      color: var(--blue);
+      font-size: .75rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      letter-spacing: .02em;
+    }
+    .user-av.admin-av { background: var(--accent-lt); color: var(--accent); }
+    .user-name { font-size: .8rem; font-weight: 600; color: var(--ink); line-height: 1.2; }
+    .user-role { font-size: .7rem; color: var(--muted); }
+    .btn-logout {
+      margin-left: auto;
+      background: none;
+      border: 1px solid var(--line2);
+      border-radius: 6px;
+      padding: 5px 8px;
+      cursor: pointer;
+      color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .btn-logout:hover { background: var(--red-lt); color: var(--red); border-color: rgba(220,38,38,.25); }
+    .btn-logout svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+ 
+    /* ── MAIN AREA ── */
+    .main-area { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; }
+ 
+    .topbar {
+      height: var(--topbar-h);
+      background: var(--card);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .topbar-title { font-size: .9rem; font-weight: 600; color: var(--ink); letter-spacing: -.01em; }
+    .topbar-date  { font-size: .75rem; font-family: 'DM Mono', monospace; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 99px; padding: .2rem .7rem; }
+ 
+    .page { padding: 1.5rem; display: none; }
+    .page.active { display: block; }
+ 
+    /* ── ALERTS ── */
+    .alert {
+      display: flex; align-items: flex-start; gap: .6rem;
+      padding: .7rem .9rem;
+      border-radius: var(--r-sm);
+      font-size: .82rem;
+      margin-bottom: 1rem;
+      border: 1px solid;
+      animation: slideIn .2s ease;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+    .alert svg { width: 15px; height: 15px; flex-shrink: 0; margin-top: 1px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+    .alert-success { background: var(--green-lt); color: #065f46; border-color: rgba(5,150,105,.2); }
+    .alert-error   { background: var(--red-lt);   color: #991b1b; border-color: rgba(220,38,38,.2); }
+    .alert-info    { background: var(--blue-lt);  color: #1e40af; border-color: rgba(37,99,235,.2); }
+    .alert-warn    { background: var(--amber-lt); color: #92400e; border-color: rgba(217,119,6,.2); }
+ 
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--r);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+    }
+    .card-hd {
+      padding: 1rem 1.25rem .75rem;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem;
+    }
+    .card-hd-text h2 { font-size: .9rem; font-weight: 600; color: var(--ink); letter-spacing: -.01em; }
+    .card-hd-text p  { font-size: .75rem; color: var(--muted); margin-top: .15rem; }
+    .card-body { padding: 1rem 1.25rem; }
+    .card-footer { padding: .75rem 1.25rem; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: flex-end; gap: .6rem; }
+    .card-div  { height: 1px; background: var(--line); }
+ 
+    /* ── FORMS ── */
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; margin-bottom: .85rem; }
+    .form-grid-1 { margin-bottom: .85rem; }
+ 
+    .form-label {
+      display: block;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--ink2);
+      margin-bottom: .35rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .required { color: var(--red); margin-left: 2px; }
+ 
+    .form-ctrl {
+      width: 100%;
+      padding: .55rem .75rem;
+      background: var(--surface);
+      border: 1.5px solid var(--line2);
+      border-radius: var(--r-sm);
+      font-size: .875rem;
+      color: var(--ink);
+      font-family: inherit;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    .form-ctrl:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1); background: #fff; }
+    .form-ctrl::placeholder { color: var(--muted); }
+ 
+    select.form-ctrl {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 12px;
+      padding-right: 2rem;
+    }
+    textarea.form-ctrl { min-height: 76px; resize: vertical; line-height: 1.5; }
+ 
+    .form-hint { font-size: .72rem; color: var(--muted); margin-top: .25rem; }
+ 
+    .formateur-chip {
+      display: flex; align-items: center; gap: .5rem;
+      background: var(--blue-lt);
+      border: 1.5px solid rgba(37,99,235,.2);
+      border-radius: var(--r-sm);
+      padding: .5rem .75rem;
+      font-size: .875rem;
+      font-weight: 500;
+      color: #1e40af;
+    }
+    .formateur-chip svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
+ 
+    .sep-line {
+      display: flex; align-items: center; gap: .65rem;
+      font-size: .7rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .07em;
+      margin: 1.1rem 0 .85rem;
+    }
+    .sep-line::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+ 
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+      padding: .5rem 1.1rem;
+      border-radius: var(--r-sm);
+      font-size: .83rem; font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all .15s;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .btn svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+    .btn-primary  { background: var(--blue);    color: #fff;         border-color: var(--blue);  }
+    .btn-primary:hover  { background: var(--blue-dk); border-color: var(--blue-dk); box-shadow: 0 4px 12px rgba(37,99,235,.25); }
+    .btn-ghost    { background: var(--surface);  color: var(--ink2);  border-color: var(--line2); }
+    .btn-ghost:hover    { background: var(--blue-lt); color: var(--blue); border-color: rgba(37,99,235,.25); }
+    .btn-success  { background: var(--green-lt); color: #065f46;      border-color: rgba(5,150,105,.25); }
+    .btn-success:hover  { background: var(--green); color: #fff; }
+    .btn-danger   { background: var(--red-lt);   color: #991b1b;      border-color: rgba(220,38,38,.25); }
+    .btn-danger:hover   { background: var(--red); color: #fff; }
+    .btn-warn     { background: var(--amber-lt); color: #92400e;      border-color: rgba(217,119,6,.25); }
+    .btn-warn:hover     { background: var(--amber); color: #fff; }
+    .btn-full { width: 100%; padding: .65rem; font-size: .9rem; }
+    .btn-sm   { padding: .3rem .7rem; font-size: .75rem; }
+    .btn-lg   { padding: .65rem 1.4rem; font-size: .9rem; }
+ 
+    /* ── BADGES ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      padding: .18rem .6rem;
+      border-radius: 99px;
+      font-size: .72rem; font-weight: 500; letter-spacing: .02em;
+      white-space: nowrap;
+    }
+    .badge-blue   { background: var(--blue-lt);   color: #1e40af; }
+    .badge-green  { background: var(--green-lt);  color: #065f46; }
+    .badge-amber  { background: var(--amber-lt);  color: #92400e; }
+    .badge-red    { background: var(--red-lt);    color: #991b1b; }
+    .badge-accent { background: var(--accent-lt); color: #5b21b6; }
+ 
+    /* ── KPI STAT CARDS ── */
+    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: .75rem; margin-bottom: 1.25rem; }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--r);
+      padding: 1rem 1.1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0;
+      width: 3px; height: 100%;
+    }
+    .s-blue::before   { background: var(--blue);   }
+    .s-green::before  { background: var(--green);  }
+    .s-amber::before  { background: var(--amber);  }
+    .s-accent::before { background: var(--accent); }
+    .stat-label { font-size: .68rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+    .stat-val   { font-size: 1.7rem; font-weight: 600; color: var(--ink); letter-spacing: -.04em; margin: .2rem 0 0; font-family: 'DM Mono', monospace; }
+    .stat-sub   { font-size: .7rem; color: var(--muted); margin-top: .15rem; }
+ 
+    /* ── TABLE ── */
+    .t-wrap { overflow-x: auto; }
+    .t-table { width: 100%; border-collapse: collapse; font-size: .8rem; table-layout: fixed; }
+    .t-table thead th {
+      background: var(--surface);
+      color: var(--muted);
+      font-size: .68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .06em;
+      padding: .55rem 1rem;
+      border-bottom: 1px solid var(--line2);
+      white-space: nowrap;
+      text-align: left;
+    }
+    .t-table tbody td {
+      padding: .7rem 1rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink2);
+      vertical-align: middle;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .t-table tbody tr:last-child td { border-bottom: none; }
+    .t-table tbody tr:hover td { background: #f0f7ff; }
+    .td-main  { color: var(--ink) !important; font-weight: 500; }
+    .td-mono  { font-family: 'DM Mono', monospace; font-size: .75rem; color: var(--blue); }
+    .td-dim   { font-size: .75rem; color: var(--muted); }
+ 
+    /* ── PROGRESS BARS ── */
+    .prog-list { display: flex; flex-direction: column; gap: .65rem; }
+    .prog-item { display: flex; align-items: center; gap: .65rem; }
+    .prog-label { font-size: .75rem; color: var(--ink2); min-width: 145px; max-width: 145px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prog-track { flex: 1; background: var(--line); border-radius: 99px; height: 6px; overflow: hidden; }
+    .prog-fill  { height: 100%; border-radius: 99px; transition: width .5s ease; }
+    .fill-high   { background: var(--green);  }
+    .fill-mid    { background: var(--amber);  }
+    .fill-low    { background: var(--red);    }
+    .prog-pct   { font-size: .7rem; font-family: 'DM Mono', monospace; color: var(--muted); min-width: 30px; text-align: right; }
+ 
+    /* ── AVATAR ── */
+    .av {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .72rem; font-weight: 700;
+      flex-shrink: 0; letter-spacing: .02em;
+    }
+ 
+    /* ── FORMATEUR CARDS ── */
+    .fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    .fc-card {
+      background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+      padding: .85rem 1rem; display: flex; align-items: center; gap: .75rem;
+    }
+    .fc-name  { font-size: .8rem; font-weight: 600; color: var(--ink); }
+    .fc-hours { font-size: .7rem; color: var(--muted); margin-top: .1rem; }
+ 
+    /* ── ADMIN STATUS DOTS ── */
+    .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .dot-pending { background: var(--amber); }
+    .dot-active  { background: var(--green); }
+    .dot-refused { background: var(--muted); }
+ 
+    /* ── PAGE HEADERS ── */
+    .page-hd {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .page-hd-title { font-size: 1.15rem; font-weight: 600; color: var(--ink); letter-spacing: -.02em; }
+    .page-hd-sub   { font-size: .78rem; color: var(--muted); margin-top: .2rem; }
+ 
+    /* ── GRID LAYOUTS ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .grid-3-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+ 
+    /* ── CHART ── */
+    .chart-wrap { position: relative; height: 280px; }
+ 
+    /* ── EMPTY STATE ── */
+    .empty-state { text-align: center; padding: 3rem 1rem; }
+    .empty-state svg { width: 40px; height: 40px; stroke: var(--line2); fill: none; stroke-width: 1.5; margin-bottom: .75rem; }
+    .empty-state p { font-size: .85rem; color: var(--muted); }
+ 
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); transition: transform .25s; }
+      .sidebar.open { transform: none; }
+      .main-area { margin-left: 0; }
+      .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .grid-2, .grid-3-1, .fc-grid { grid-template-columns: 1fr; }
+      .form-grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+ 
+<!-- ════════════════════════════════════════════
+  VUE LOGIN
+════════════════════════════════════════════ -->
+<div id="screen-login" class="auth-screen active">
+  <div class="auth-box">
+    <div class="auth-brand">
+      <div class="auth-logo">
+        <svg viewBox="0 0 24 24"><path d="M4 19V8a3 3 0 013-3h10a3 3 0 013 3v11"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+      </div>
+      <h1>Suivi Pédagogique</h1>
+      <p>Connectez-vous à votre espace</p>
+    </div>
+ 
+    <div id="msg-login"></div>
+ 
+    <div class="form-grid-1">
+      <label class="form-label">Adresse email</label>
+      <input id="login-email" type="email" class="form-ctrl" placeholder="prenom.nom@centre.ma">
+    </div>
+    <div class="form-grid-1">
+      <label class="form-label">Mot de passe</label>
+      <input id="login-pass" type="password" class="form-ctrl" placeholder="••••••••">
+    </div>
+ 
+    <button class="btn btn-primary btn-full btn-lg" onclick="handleLogin()" style="margin-top:.5rem;">
+      <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      Se connecter
+    </button>
+ 
+    <div class="card-div" style="margin:1.25rem 0;"></div>
+ 
+    <div class="alert alert-info" style="margin-bottom:0;">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      <div style="font-size:.78rem;">
+        <strong>Admin :</strong> directeur@test.com / dir123<br>
+        <strong>Formateur :</strong> tarik@test.com / 1234
+      </div>
+    </div>
+  </div>
+</div>
+ 
+ 
+<!-- ════════════════════════════════════════════
+  APP LAYOUT
+════════════════════════════════════════════ -->
+<div id="screen-app" class="app-layout">
+ 
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 19V8a3 3 0 013-3h10a3 3 0 013 3v11"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">Suivi Pédagogique</div>
+        <div class="logo-sub">Centre de formation</div>
+      </div>
+    </div>
+ 
+    <nav class="nav" id="sidebar-nav">
+      <!-- Nav items injected by JS -->
+    </nav>
+ 
+    <div class="sidebar-user">
+      <div class="user-av" id="user-av">—</div>
+      <div>
+        <div class="user-name" id="user-name">—</div>
+        <div class="user-role" id="user-role">—</div>
+      </div>
+      <button class="btn-logout" onclick="deconnexion()" title="Déconnexion">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </aside>
+ 
+  <!-- MAIN -->
+  <div class="main-area">
+    <header class="topbar">
+      <span class="topbar-title" id="topbar-title">Tableau de bord</span>
+      <span class="topbar-date" id="topbar-date"></span>
+    </header>
+ 
+    <div style="padding:1.5rem;" id="pages-wrap">
+ 
+      <!-- PAGE : SAISIE SÉANCE -->
+      <div class="page" id="page-saisie">
+        <div class="page-hd">
+          <div>
+            <div class="page-hd-title">Nouvelle séance</div>
+            <div class="page-hd-sub" id="saisie-sub">Enregistrez une séance de formation</div>
+          </div>
+          <span class="badge badge-accent">Formateur</span>
+        </div>
+ 
+        <div id="msg-saisie"></div>
+ 
+        <div class="card">
+          <div class="card-body">
+            <div class="sep-line">Informations générales</div>
+            <div class="form-grid-2">
+              <div>
+                <label class="form-label">Module <span class="required">*</span></label>
+                <select id="s-module" class="form-ctrl" onchange="onModuleChange()">
+                  <option value="">— Sélectionner —</option>
+                </select>
+              </div>
+              <div>
+                <label class="form-label">Date de la séance <span class="required">*</span></label>
+                <input id="s-date" type="date" class="form-ctrl">
+              </div>
+            </div>
+ 
+            <div class="form-grid-2">
+              <div>
+                <label class="form-label">Heure de début <span class="required">*</span></label>
+                <input id="s-debut" type="time" class="form-ctrl" oninput="calcHeures()">
+              </div>
+              <div>
+                <label class="form-label">Heure de fin <span class="required">*</span></label>
+                <input id="s-fin" type="time" class="form-ctrl" oninput="calcHeures()">
+              </div>
+            </div>
+ 
+            <div class="form-grid-2">
+              <div>
+                <label class="form-label">Formateur</label>
+                <div class="formateur-chip" id="formateur-chip">
+                  <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  <span id="chip-name">Sélectionnez un module</span>
+                </div>
+              </div>
+              <div>
+                <label class="form-label">Durée calculée</label>
+                <div class="formateur-chip" style="background:var(--amber-lt);border-color:rgba(217,119,6,.2);color:#92400e;">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  <span id="chip-heures">—</span>
+                </div>
+              </div>
+            </div>
+ 
+            <div class="sep-line">Contenu pédagogique</div>
+ 
+            <div class="form-grid-1">
+              <label class="form-label">Objectif pédagogique <span class="required">*</span></label>
+              <textarea id="s-objectif" class="form-ctrl" placeholder="Décrire l'objectif principal de la séance…"></textarea>
+            </div>
+            <div class="form-grid-1">
+              <label class="form-label">Déroulement <span class="required">*</span></label>
+              <textarea id="s-deroulement" class="form-ctrl" placeholder="Décrire le déroulement de la séance…"></textarea>
+            </div>
+ 
+            <div class="sep-line">Suivi</div>
+ 
+            <div class="form-grid-2">
+              <div>
+                <label class="form-label">Observations</label>
+                <textarea id="s-obs" class="form-ctrl" style="min-height:62px;" placeholder="Remarques éventuelles…"></textarea>
+              </div>
+              <div>
+                <label class="form-label">Suite à donner</label>
+                <textarea id="s-suite" class="form-ctrl" style="min-height:62px;" placeholder="Actions à prévoir…"></textarea>
+              </div>
+            </div>
+          </div>
+ 
+          <div class="card-footer">
+            <button class="btn btn-ghost" onclick="resetSaisie()">Annuler</button>
+            <button class="btn btn-primary btn-lg" onclick="handleSaisieSeance()">
+              <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Enregistrer la séance
+            </button>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- PAGE : DASHBOARD -->
+      <div class="page" id="page-dashboard">
+ 
+        <div class="stats-grid" id="kpi-grid"></div>
+ 
+        <div class="grid-3-1">
+          <!-- Avancement modules -->
+          <div class="card">
+            <div class="card-hd">
+              <div class="card-hd-text">
+                <h2>Avancement par module</h2>
+                <p>Heures réalisées vs prévues</p>
+              </div>
+            </div>
+            <div class="card-body" style="padding-top:0;">
+              <div class="prog-list" id="prog-modules"></div>
+            </div>
+          </div>
+ 
+          <!-- Formateurs -->
+          <div class="card">
+            <div class="card-hd">
+              <div class="card-hd-text">
+                <h2>Formateurs</h2>
+                <p>Heures réalisées</p>
+              </div>
+            </div>
+            <div class="card-body" style="padding-top:0;">
+              <div id="fc-grid-wrap"></div>
+            </div>
+          </div>
+        </div>
+ 
+        <!-- Tableau séances -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-hd">
+            <div class="card-hd-text">
+              <h2>Séances enregistrées</h2>
+              <p id="seances-count">—</p>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('page-saisie','Nouvelle séance')">
+              <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Ajouter
+            </button>
+          </div>
+          <div id="msg-dashboard"></div>
+          <div class="t-wrap">
+            <table class="t-table" id="table-seances">
+              <colgroup>
+                <col style="width:130px"><col style="width:150px"><col style="width:90px">
+                <col style="width:90px"><col style="width:70px"><col style="width:170px">
+                <col style="width:90px">
+              </colgroup>
+              <thead>
+                <tr>
+                  <th>Formateur</th><th>Module</th><th>Date</th>
+                  <th>Horaire</th><th>Heures</th><th>Objectif</th><th>Validé</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-seances"></tbody>
+            </table>
+          </div>
+        </div>
+ 
+        <!-- Graphiques -->
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-hd"><div class="card-hd-text"><h2>Avancement des modules</h2><p>Réalisé vs prévu (heures)</p></div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-modules"></canvas></div></div>
+          </div>
+          <div class="card">
+            <div class="card-hd"><div class="card-hd-text"><h2>Heures par formateur</h2><p>Total séances validées</p></div></div>
+            <div class="card-body"><div class="chart-wrap"><canvas id="chart-formateurs"></canvas></div></div>
+          </div>
+        </div>
+      </div>
+ 
+      <!-- PAGE : ADMIN -->
+      <div class="page" id="page-admin">
+        <div class="page-hd">
+          <div>
+            <div class="page-hd-title">Gestion des comptes</div>
+            <div class="page-hd-sub">Approuver ou refuser les demandes d'inscription</div>
+          </div>
+          <div style="display:flex;gap:.5rem;" id="admin-badges"></div>
+        </div>
+ 
+        <!-- En attente -->
+        <div class="card" style="margin-bottom:1rem;" id="card-pending">
+          <div class="card-hd">
+            <div class="card-hd-text">
+              <h2 style="display:flex;align-items:center;gap:.5rem;">
+                <span class="dot dot-pending"></span> Demandes en attente
+              </h2>
+            </div>
+          </div>
+          <div class="t-wrap">
+            <table class="t-table">
+              <colgroup><col><col><col style="width:120px"><col style="width:180px"></colgroup>
+              <thead><tr><th>Nom</th><th>Email</th><th>Date</th><th>Actions</th></tr></thead>
+              <tbody id="tbody-pending"></tbody>
+            </table>
+          </div>
+        </div>
+ 
+        <!-- Actifs -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-hd">
+            <div class="card-hd-text">
+              <h2 style="display:flex;align-items:center;gap:.5rem;">
+                <span class="dot dot-active"></span> Comptes actifs
+              </h2>
+            </div>
+          </div>
+          <div class="t-wrap">
+            <table class="t-table">
+              <colgroup><col><col><col style="width:100px"><col style="width:120px"><col style="width:80px"></colgroup>
+              <thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Approuvé le</th><th></th></tr></thead>
+              <tbody id="tbody-active"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+ 
+    </div>
+  </div>
+</div>
+ 
+ 
+<script>
+  /* ════════════════ CONFIG ════════════════ */
+  const API = 'http://localhost:5000/api';
+  let token = localStorage.getItem('jwt');
+  let user  = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+  let chartModules, chartFormateurs;
+ 
+  /* ════════════════ INIT ════════════════ */
+  (function init() {
+    document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+    setInterval(() => {
+      document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+    }, 60000);
+    if (token && user) routeByRole();
+  })();
+ 
+  /* ════════════════ AUTH ════════════════ */
+  async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pass  = document.getElementById('login-pass').value;
+    const msgEl = document.getElementById('msg-login');
+    if (!email || !pass) { showAlert(msgEl, 'Veuillez remplir tous les champs.', 'error'); return; }
+    try {
+      const res  = await fetch(`${API}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email, password:pass}) });
+      const data = await res.json();
+      if (!res.ok) { showAlert(msgEl, data.erreur || 'Email ou mot de passe incorrect.', 'error'); return; }
+      token = data.token;
+      user  = data.utilisateur;
+      localStorage.setItem('jwt', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      routeByRole();
+    } catch(e) {
+      showAlert(msgEl, 'Impossible de joindre le serveur.', 'error');
+    }
+  }
+ 
+  document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+ 
+  function deconnexion() {
+    localStorage.removeItem('jwt');
+    localStorage.removeItem('user');
+    token = null; user = null;
+    document.getElementById('screen-app').classList.remove('active');
+    document.getElementById('screen-login').classList.add('active');
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-pass').value  = '';
+    document.getElementById('msg-login').innerHTML = '';
+  }
+ 
+  /* ════════════════ ROUTING ════════════════ */
+  function routeByRole() {
+    if (!user) return;
+    document.getElementById('screen-login').classList.remove('active');
+    document.getElementById('screen-app').classList.add('active');
+    buildSidebar();
+    buildUserBlock();
+    if (user.role === 'formateur') {
+      showPage('page-saisie', 'Nouvelle séance');
+      chargerModulesFormateur();
+    } else {
+      showPage('page-dashboard', 'Tableau de bord');
+      chargerDashboard();
+    }
+  }
+ 
+  function showPage(id, title) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById('topbar-title').textContent = title;
+    document.querySelectorAll('.nav-item').forEach(n => {
+      n.classList.toggle('active', n.dataset.page === id);
+    });
+  }
+ 
+  /* ════════════════ SIDEBAR ════════════════ */
+  function buildSidebar() {
+    const nav = document.getElementById('sidebar-nav');
+    const isAdmin = user.role === 'directeur';
+    const items = [
+      isAdmin
+        ? { icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>', label: 'Tableau de bord', page: 'page-dashboard', title: 'Tableau de bord' }
+        : { icon: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/>', label: 'Saisie séance', page: 'page-saisie', title: 'Nouvelle séance' },
+    ];
+    if (isAdmin) {
+      items.push({ icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>', label: 'Utilisateurs', page: 'page-admin', title: 'Gestion des comptes', badge: true });
+    }
+ 
+    nav.innerHTML = '<div class="nav-section">Menu</div>' + items.map(item => `
+      <button class="nav-item" data-page="${item.page}" data-title="${item.title}" onclick="showPage('${item.page}','${item.title}')">
+        <svg viewBox="0 0 24 24">${item.icon}</svg>
+        ${item.label}
+        ${item.badge ? '<span class="nav-badge" id="pending-badge" style="display:none">0</span>' : ''}
+      </button>
+    `).join('');
+  }
+ 
+  function buildUserBlock() {
+    const initials = user.nom.split(' ').slice(0,2).map(s => s[0]?.toUpperCase()).join('');
+    const avEl = document.getElementById('user-av');
+    avEl.textContent = initials;
+    avEl.className = 'user-av' + (user.role === 'directeur' ? ' admin-av' : '');
+    document.getElementById('user-name').textContent = user.nom;
+    document.getElementById('user-role').textContent = user.role === 'directeur' ? 'Administrateur' : 'Formateur';
+  }
+ 
+  /* ════════════════ SAISIE ════════════════ */
+  async function chargerModulesFormateur() {
+    try {
+      const res     = await fetch(`${API}/modules/miens`, { headers: { Authorization: `Bearer ${token}` } });
+      const modules = await res.json();
+      const sel     = document.getElementById('s-module');
+      sel.innerHTML = '<option value="">— Sélectionner un module —</option>';
+      modules.forEach(m => {
+        const o = new Option(m.nom, JSON.stringify(m));
+        sel.appendChild(o);
+      });
+      document.getElementById('saisie-sub').textContent = `Formateur : ${user.nom}`;
+    } catch(e) { console.error(e); }
+  }
+ 
+  function onModuleChange() {
+    const val  = document.getElementById('s-module').value;
+    const chip = document.getElementById('chip-name');
+    if (!val) { chip.textContent = 'Sélectionnez un module'; return; }
+    const m = JSON.parse(val);
+    chip.textContent = m.formateurNom || user.nom;
+  }
+ 
+  function calcHeures() {
+    const deb = document.getElementById('s-debut').value;
+    const fin = document.getElementById('s-fin').value;
+    const el  = document.getElementById('chip-heures');
+    if (!deb || !fin) { el.textContent = '—'; return; }
+    const [dH,dM] = deb.split(':').map(Number);
+    const [fH,fM] = fin.split(':').map(Number);
+    const h = (fH * 60 + fM - dH * 60 - dM) / 60;
+    el.textContent = h > 0 ? `${h.toFixed(1)} h` : 'Horaire invalide';
+  }
+ 
+  function resetSaisie() {
+    ['s-module','s-date','s-debut','s-fin','s-objectif','s-deroulement','s-obs','s-suite'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.getElementById('chip-name').textContent   = 'Sélectionnez un module';
+    document.getElementById('chip-heures').textContent = '—';
+  }
+ 
+  async function handleSaisieSeance() {
+    const modStr = document.getElementById('s-module').value;
+    const msg    = document.getElementById('msg-saisie');
+    if (!modStr) { showAlert(msg, 'Veuillez sélectionner un module.', 'error'); return; }
+    const m   = JSON.parse(modStr);
+    const deb = document.getElementById('s-debut').value;
+    const fin = document.getElementById('s-fin').value;
+    const [dH,dM] = deb.split(':').map(Number);
+    const [fH,fM] = fin.split(':').map(Number);
+    const h = (fH * 60 + fM - dH * 60 - dM) / 60;
+    if (h <= 0) { showAlert(msg, "L'heure de fin doit être après l'heure de début.", 'error'); return; }
+    const payload = {
+      date: document.getElementById('s-date').value,
+      heureDebut: deb, heureFin: fin,
+      moduleId: m._id, moduleNom: m.nom,
+      objectif:     document.getElementById('s-objectif').value,
+      deroulement:  document.getElementById('s-deroulement').value,
+      observations: document.getElementById('s-obs').value,
+      suite:        document.getElementById('s-suite').value,
+      heures: h
+    };
+    if (!payload.date || !payload.objectif || !payload.deroulement) {
+      showAlert(msg, 'Veuillez remplir tous les champs obligatoires.', 'error'); return;
+    }
+    try {
+      const res  = await fetch(`${API}/seances`, { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (!res.ok) { showAlert(msg, data.erreur, 'error'); return; }
+      showAlert(msg, 'Séance enregistrée avec succès !', 'success');
+      resetSaisie();
+    } catch(e) { showAlert(msg, "Erreur lors de l'enregistrement.", 'error'); }
+  }
+ 
+  /* ════════════════ DASHBOARD ════════════════ */
+  async function chargerDashboard() {
+    await Promise.all([chargerSeances(), chargerStats(), chargerUtilisateurs()]);
+  }
+ 
+  async function chargerSeances() {
+    try {
+      const res    = await fetch(`${API}/seances`, { headers:{ Authorization:`Bearer ${token}` } });
+      const data   = await res.json();
+      const tbody  = document.getElementById('tbody-seances');
+      tbody.innerHTML = '';
+      document.getElementById('seances-count').textContent = `${data.length} séance(s) enregistrée(s)`;
+ 
+      const colors = ['#dbeafe','#dcfce7','#fef3c7','#fce7f3','#ede9fe'];
+      const colorMap = {};
+      let ci = 0;
+      data.forEach(s => {
+        if (!colorMap[s.formateurNom]) colorMap[s.formateurNom] = colors[ci++ % colors.length];
+        const textColors = { '#dbeafe':'#1e40af','#dcfce7':'#065f46','#fef3c7':'#92400e','#fce7f3':'#9d174d','#ede9fe':'#5b21b6' };
+        const bg = colorMap[s.formateurNom];
+        const tc = textColors[bg];
+        const initials = s.formateurNom?.split(' ').slice(0,2).map(w=>w[0]?.toUpperCase()).join('') || '?';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><div style="display:flex;align-items:center;gap:.5rem;">
+            <div class="av" style="background:${bg};color:${tc};">${initials}</div>
+            <span class="td-main" style="font-size:.78rem;">${s.formateurNom}</span>
+          </div></td>
+          <td class="td-dim">${s.moduleNom}</td>
+          <td class="td-mono">${s.date}</td>
+          <td class="td-dim">${s.heureDebut}–${s.heureFin}</td>
+          <td><span class="badge badge-blue">${s.heures}h</span></td>
+          <td class="td-dim">${s.objectif}</td>
+          <td>${s.valideParDirecteur
+            ? '<span class="badge badge-green">Validé</span>'
+            : `<button class="btn btn-success btn-sm" onclick="validerSeance('${s._id}')">Valider</button>`}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch(e) { console.error(e); }
+  }
+ 
+  async function validerSeance(id) {
+    try {
+      const res  = await fetch(`${API}/seances/${id}/valider`, { method:'PATCH', headers:{ Authorization:`Bearer ${token}` } });
+      const data = await res.json();
+      if (!res.ok) { showAlert(document.getElementById('msg-dashboard'), data.erreur, 'error'); return; }
+      showAlert(document.getElementById('msg-dashboard'), data.message, 'success');
+      await chargerSeances();
+      await chargerStats();
+    } catch(e) { console.error(e); }
+  }
+ 
+  async function chargerStats() {
+    try {
+      const [rM, rF] = await Promise.all([
+        fetch(`${API}/stats/modules`,    { headers:{ Authorization:`Bearer ${token}` } }),
+        fetch(`${API}/stats/formateurs`, { headers:{ Authorization:`Bearer ${token}` } })
+      ]);
+      const sm = await rM.json();
+      const sf = await rF.json();
+      renderKPI(sm, sf);
+      renderProgModules(sm);
+      renderFormateurCards(sf);
+      renderCharts(sm, sf);
+    } catch(e) { console.error(e); }
+  }
+ 
+  function renderKPI(sm, sf) {
+    const totalR = sm.reduce((s,m) => s + (m.heuresRealisees||0), 0);
+    const totalP = sm.reduce((s,m) => s + (m.heuresPrevues||0), 0);
+    const taux   = totalP > 0 ? ((totalR/totalP)*100).toFixed(1) : 0;
+    document.getElementById('kpi-grid').innerHTML = `
+      <div class="stat-card s-blue">
+        <div class="stat-label">Heures prévues</div>
+        <div class="stat-val">${totalP}h</div>
+        <div class="stat-sub">Référentiel total</div>
+      </div>
+      <div class="stat-card s-green">
+        <div class="stat-label">Heures réalisées</div>
+        <div class="stat-val">${totalR}h</div>
+        <div class="stat-sub">Séances saisies</div>
+      </div>
+      <div class="stat-card s-amber">
+        <div class="stat-label">Taux de réalisation</div>
+        <div class="stat-val">${taux}%</div>
+        <div class="stat-sub">Avancement global</div>
+      </div>
+      <div class="stat-card s-accent">
+        <div class="stat-label">Formateurs actifs</div>
+        <div class="stat-val">${sf.length}</div>
+        <div class="stat-sub">Avec séances saisies</div>
+      </div>
+    `;
+  }
+ 
+  function barClass(pct) { return pct >= 75 ? 'fill-high' : pct >= 40 ? 'fill-mid' : 'fill-low'; }
+ 
+  function renderProgModules(sm) {
+    const el = document.getElementById('prog-modules');
+    el.innerHTML = sm.map(m => {
+      const pct = m.heuresPrevues > 0 ? Math.round((m.heuresRealisees/m.heuresPrevues)*100) : 0;
+      return `<div class="prog-item">
+        <span class="prog-label" title="${m.nom}">${m.nom}</span>
+        <div class="prog-track"><div class="prog-fill ${barClass(pct)}" style="width:${pct}%"></div></div>
+        <span class="prog-pct">${pct}%</span>
+      </div>`;
+    }).join('');
+  }
+ 
+  const FC_COLORS = [
+    { bg:'#dbeafe', tc:'#1e40af' },
+    { bg:'#dcfce7', tc:'#065f46' },
+    { bg:'#fef3c7', tc:'#92400e' },
+    { bg:'#fce7f3', tc:'#9d174d' },
+    { bg:'#ede9fe', tc:'#5b21b6' },
+  ];
+ 
+  function renderFormateurCards(sf) {
+    const wrap = document.getElementById('fc-grid-wrap');
+    wrap.innerHTML = '<div class="fc-grid">' + sf.map((f,i) => {
+      const c = FC_COLORS[i % FC_COLORS.length];
+      const ini = f.formateurNom?.split(' ').slice(0,2).map(w=>w[0]?.toUpperCase()).join('') || '?';
+      return `<div class="fc-card">
+        <div class="av" style="background:${c.bg};color:${c.tc};">${ini}</div>
+        <div>
+          <div class="fc-name">${f.formateurNom}</div>
+          <div class="fc-hours">${f.heuresRealisees}h réalisées</div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+ 
+  function renderCharts(sm, sf) {
+    const BLUE    = '#2563eb';
+    const BLUE_LT = '#bfdbfe';
+ 
+    if (chartModules)    { chartModules.destroy();    }
+    if (chartFormateurs) { chartFormateurs.destroy();  }
+ 
+    chartModules = new Chart(document.getElementById('chart-modules'), {
+      type: 'bar',
+      data: {
+        labels: sm.map(m => m.nom.length > 20 ? m.nom.slice(0,20)+'…' : m.nom),
+        datasets: [
+          { label:'Réalisé', data: sm.map(m=>m.heuresRealisees), backgroundColor: BLUE,    borderRadius: 4 },
+          { label:'Prévu',   data: sm.map(m=>m.heuresPrevues),   backgroundColor: BLUE_LT, borderRadius: 4 }
+        ]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position:'top', labels:{ font:{ family:"'DM Sans'",size:12 } } } },
+        scales: { x:{ beginAtZero:true, grid:{ color:'rgba(0,0,0,.04)' }, ticks:{ font:{ family:"'DM Mono'",size:11 } } }, y:{ grid:{ display:false }, ticks:{ font:{ family:"'DM Sans'",size:11 } } } }
+      }
+    });
+ 
+    const barColors = sf.map((_,i) => FC_COLORS[i % FC_COLORS.length].bg.replace('dbeafe','378add').replace('dcfce7','22c55e').replace('fef3c7','f59e0b').replace('fce7f3','ec4899').replace('ede9fe','7c3aed'));
+ 
+    chartFormateurs = new Chart(document.getElementById('chart-formateurs'), {
+      type: 'bar',
+      data: {
+        labels: sf.map(f => f.formateurNom?.split(' ').slice(0,2).join(' ')),
+        datasets: [{ label:'Heures réalisées', data: sf.map(f=>f.heuresRealisees), backgroundColor: [BLUE,'#10b981','#f59e0b','#ec4899','#7c3aed'], borderRadius: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display:false } },
+        scales: { y:{ beginAtZero:true, grid:{ color:'rgba(0,0,0,.04)' }, ticks:{ font:{ family:"'DM Mono'",size:11 } } }, x:{ grid:{ display:false }, ticks:{ font:{ family:"'DM Sans'",size:11 } } } }
+      }
+    });
+  }
+ 
+  /* ════════════════ ADMIN USERS ════════════════ */
+  async function chargerUtilisateurs() {
+    try {
+      const res   = await fetch(`${API}/users`, { headers:{ Authorization:`Bearer ${token}` } });
+      const users = await res.json();
+      const pending  = users.filter(u => u.status === 'en_attente');
+      const active   = users.filter(u => u.status === 'approuve');
+      const badgeEl  = document.getElementById('pending-badge');
+      const badgesEl = document.getElementById('admin-badges');
+ 
+      if (badgeEl) { badgeEl.textContent = pending.length; badgeEl.style.display = pending.length ? 'inline-flex' : 'none'; }
+ 
+      badgesEl.innerHTML = `
+        ${pending.length ? `<span class="badge badge-amber">${pending.length} en attente</span>` : ''}
+        <span class="badge badge-green">${active.length} actifs</span>
+      `;
+ 
+      document.getElementById('tbody-pending').innerHTML = pending.length
+        ? pending.map(u => `
+          <tr>
+            <td class="td-main">${u.nom}</td>
+            <td class="td-mono">${u.email}</td>
+            <td class="td-dim">${new Date(u.createdAt).toLocaleDateString('fr-FR')}</td>
+            <td><div style="display:flex;gap:.4rem;">
+              <button class="btn btn-success btn-sm" onclick="approuver('${u._id}')">Approuver</button>
+              <button class="btn btn-danger btn-sm"  onclick="refuser('${u._id}')">Refuser</button>
+            </div></td>
+          </tr>`) .join('')
+        : '<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--muted);font-size:.8rem;">Aucune demande en attente</td></tr>';
+ 
+      document.getElementById('tbody-active').innerHTML = active.map(u => `
+        <tr>
+          <td class="td-main">${u.nom}</td>
+          <td class="td-mono">${u.email}</td>
+          <td><span class="badge ${u.role === 'directeur' ? 'badge-accent' : 'badge-blue'}">${u.role === 'directeur' ? 'Admin' : 'Formateur'}</span></td>
+          <td class="td-dim">${u.approvedAt ? new Date(u.approvedAt).toLocaleDateString('fr-FR') : '—'}</td>
+          <td>${u.role !== 'directeur' ? `<button class="btn btn-danger btn-sm" onclick="supprimerUser('${u._id}')">Suppr.</button>` : '—'}</td>
+        </tr>`).join('');
+    } catch(e) { console.error(e); }
+  }
+ 
+  async function approuver(id)  { await actionUser(`${API}/users/${id}/approve`, 'PATCH'); }
+  async function refuser(id)    { await actionUser(`${API}/users/${id}/refuse`,  'PATCH'); }
+  async function supprimerUser(id) { if (!confirm('Supprimer cet utilisateur ?')) return; await actionUser(`${API}/users/${id}`, 'DELETE'); }
+ 
+  async function actionUser(url, method) {
+    try {
+      await fetch(url, { method, headers:{ Authorization:`Bearer ${token}` } });
+      await chargerUtilisateurs();
+    } catch(e) { console.error(e); }
+  }
+ 
+  /* ════════════════ HELPERS ════════════════ */
+  function showAlert(el, msg, type) {
+    const icons = {
+      success: '<polyline points="20 6 9 17 4 12"/>',
+      error:   '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
+      info:    '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+      warn:    '<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+    };
+    const typeMap = { success:'success', error:'error', info:'info', warn:'warn' };
+    el.innerHTML = `<div class="alert alert-${typeMap[type]||'info'}">
+      <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;flex-shrink:0;margin-top:1px;">${icons[type]||icons.info}</svg>
+      <span>${msg}</span>
+    </div>`;
+    if (type === 'success') setTimeout(() => { if (el.firstChild) el.innerHTML = ''; }, 4000);
+  }
+</script>
+</body>
+</html>
