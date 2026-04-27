@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcryptjs = require('bcryptjs');
 
 // Schéma pour les utilisateurs (formateurs et directeurs)
 const userSchema = new mongoose.Schema({
@@ -40,8 +40,8 @@ userSchema.pre('save', async function(next) {
   }
   
   try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    const salt = await bcryptjs.genSalt(10);
+    this.password = await bcryptjs.hash(this.password, salt);
     next();
   } catch (error) {
     next(error);
@@ -50,7 +50,7 @@ userSchema.pre('save', async function(next) {
 
 // Méthode pour comparer le mot de passe entré avec le mot de passe hashé
 userSchema.methods.comparePassword = async function(passwordEntree) {
-  return await bcrypt.compare(passwordEntree, this.password);
+  return await bcryptjs.compare(passwordEntree, this.password);
 };
 
 module.exports = mongoose.model('User', userSchema);
