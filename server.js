@@ -11,8 +11,50 @@ app.use(express.json());
 app.use(express.static('public'));
 
 // Connexion à MongoDB
+// ── Seed des utilisateurs de test ──────────────────────────────
+const User = require('./models/User');
+
+async function seedUsers() {
+  try {
+    const count = await User.countDocuments();
+    if (count > 0) return; // Déjà initialisé
+
+    const users = [
+      {
+        nom: 'Directeur',
+        email: 'directeur@test.com',
+        password: 'dir123',
+        role: 'directeur',
+        actif: true
+      },
+      {
+        nom: 'El Khomsi Tarik',
+        email: 'tarik@test.com',
+        password: '1234',
+        role: 'formateur',
+        actif: true
+      },
+      {
+        nom: 'Alaoui Ismaili Soumaya',
+        email: 'soumaya@test.com',
+        password: '1234',
+        role: 'formateur',
+        actif: true
+      }
+    ];
+
+    await User.create(users);
+    console.log('✓ Utilisateurs de test créés');
+  } catch (err) {
+    console.error('✗ Erreur seed:', err);
+  }
+}
+
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✓ Connexion à MongoDB réussie'))
+  .then(async () => {
+    console.log('✓ Connexion à MongoDB réussie');
+    await seedUsers(); // ← appel ici
+  })
   .catch(err => {
     console.error('✗ Erreur de connexion à MongoDB:', err);
     process.exit(1);
